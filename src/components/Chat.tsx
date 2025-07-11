@@ -13,7 +13,9 @@ interface Message {
   timestamp: Date;
 }
 
+
 const Chat = () => {
+  const [model, setModel] = useState<"ollama" | "openai">("ollama");
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -53,23 +55,27 @@ const Chat = () => {
       // Simulate API call to /api/chat
       console.log('Sending message to /api/chat:', inputMessage);
       
-      // Mock response - in real app, this would be an API call
-      const mockResponses = [
-        "I hear you, and I want you to know that your feelings are completely valid. It's okay to feel this way.",
-        "Thank you for sharing that with me. It takes courage to open up about difficult emotions. How long have you been feeling this way?",
-        "That sounds really challenging. Remember that you're not alone in this. What kind of support would feel most helpful to you right now?",
-        "I'm glad you're taking the time to talk about this. Self-awareness is an important step. What do you think might help you feel a bit better today?",
-        "It's completely normal to have these thoughts and feelings. You're being very brave by reaching out. Is there anything specific that's been weighing on your mind lately?"
-      ];
-      
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-      
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: mockResponses[Math.floor(Math.random() * mockResponses.length)],
-        isUser: false,
-        timestamp: new Date()
-      };
+     const res = await fetch("http://161.97.100.37:3000/api/chat", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    message: inputMessage,
+    model // this will be "ollama" or "openai"
+  })
+});
+
+
+const data = await res.json();
+
+const botMessage: Message = {
+  id: (Date.now() + 1).toString(),
+  text: data.response || "Sorry, I couldn’t understand that.",
+  isUser: false,
+  timestamp: new Date()
+};
+
 
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
@@ -122,7 +128,19 @@ const Chat = () => {
           End Chat
         </Button>
       </div>
+      <div className="px-4 pt-2">
+  <label className="text-sm text-gray-600 mr-2">Choose Model:</label>
+  <select
+    className="text-sm border rounded px-2 py-1 text-gray-700"
+    value={model}
+    onChange={(e) => setModel(e.target.value as "ollama" | "openai")}
+  >
+    <option value="ollama">Ollama</option>
+    <option value="openai">OpenAI</option>
+  </select>
+</div>
 
+      
       {/* Chat Window */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
